@@ -45,15 +45,16 @@ Ajusta las constantes `PUERTO_OSCILOSCOPIO`, `PUERTO_GENERADOR`, `CANAL_GENERADO
 uv run caracterizacion_piezo.py
 ```
 
-Al arrancar, el script se conecta a ambos equipos y realiza un prechequeo (salida del generador activada, canales del osciloscopio activos, presencia de señal). Si todo está correcto, entra en modo interactivo:
+Al arrancar, el script se conecta a ambos equipos, pide un identificador del elemento piezoeléctrico a evaluar y realiza un prechequeo (salida del generador activada, canales del osciloscopio activos, presencia de señal). Si todo está correcto, ejecuta un barrido automático:
 
-| Entrada | Acción |
-|---|---|
-| Un número (kHz) | Ajusta la frecuencia del generador, p. ej. `260` fija 260 kHz |
-| `leer` | Mide Vpp de ambos canales y el desfase, y pregunta si guardar el punto |
-| `datos` | Muestra la tabla de puntos guardados hasta el momento |
-| `salir` | Guarda el CSV final y cierra la conexión con los equipos |
+1. Recorre la frecuencia de 100 kHz a 600 kHz en pasos de 1 kHz.
+2. En cada paso ajusta la frecuencia del generador, espera unos segundos de estabilización y mide Vpp de ambos canales y el desfase.
+3. Guarda cada punto automáticamente, sin necesidad de confirmación manual.
+4. Al llegar a 600 kHz exporta el CSV con todos los puntos.
+5. Pregunta si repetir el barrido con el mismo piezoeléctrico, evaluar uno nuevo (pide un nuevo identificador) o salir.
+
+Los parámetros del barrido (frecuencia inicial/final, paso y segundos de estabilización) se ajustan en las constantes `FREQ_INICIO_KHZ`, `FREQ_FIN_KHZ`, `PASO_KHZ` y `SEGUNDOS_ESTABILIZACION` al final de `caracterizacion_piezo.py`.
 
 ## Datos de salida
 
-Cada punto guardado incluye frecuencia (kHz), Vpp del canal del generador, Vpp del canal de medida, desfase (°) y timestamp. Al salir, los datos se exportan a un archivo `caracterizacion_piezo_<fecha>_<hora>.csv` en el directorio actual.
+Cada punto guardado incluye frecuencia (kHz), Vpp del canal del generador, Vpp del canal de medida y desfase (°) — sin timestamp. Al terminar el barrido, los datos se exportan a un archivo `caracterizacion_<identificador_piezo>_<fecha>_<hora>.csv` en el directorio actual.

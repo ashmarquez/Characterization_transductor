@@ -1,16 +1,19 @@
 """
 Caracterización de piezoeléctrico - Fuspine TFM
 ================================================
-Control conjunto por terminal de:
+Barrido automático de frecuencia controlando en conjunto:
     - Generador de funciones Tektronix AFG1022 (fija la frecuencia)
     - Osciloscopio Tektronix TBS1000C (lee Vpp y desfase)
 
 Flujo de trabajo:
-    1. Escribes un número  -> se manda como frecuencia (en kHz) al generador
-    2. Escribes 'leer'     -> lee Vpp (CH1, CH2) y desfase del osciloscopio
-                              y te pregunta si quieres guardar ese punto
-    3. Escribes 'datos'    -> muestra todo lo guardado hasta ahora
-    4. Escribes 'salir'    -> guarda el CSV final y cierra la conexión
+    1. Se solicita un identificador del elemento piezoeléctrico a evaluar
+    2. Se hace un prechequeo de ambos equipos
+    3. Se recorre la frecuencia de 100 kHz a 600 kHz en pasos de 1 kHz,
+       dejando estabilizar el sistema y leyendo Vpp (CH1, CH2) y desfase
+       en cada paso
+    4. Al terminar el barrido se guarda un CSV con los datos
+    5. Se pregunta si repetir el barrido, evaluar un nuevo piezoeléctrico
+       o salir
 """
 
 import time
@@ -193,76 +196,52 @@ def prechequeo(scope: TektronixScope, gen: AFG1022, canal_scope_gen: int, canal_
 
 
 # ============================================================
-#   MODO INTERACTIVO
+#   IDENTIFICACIÓN DEL PIEZOELÉCTRICO
 # ============================================================
-def modo_interactivo(scope: TektronixScope, gen: AFG1022, canal_scope_gen: int, canal_scope_medida: int):
-    datos = []
-    freq_actual_khz = gen.get_frequency_hz() / 1000
-
-    print("=" * 60)
-    print("MODO INTERACTIVO")
-    print("=" * 60)
-    print("  - Escribe un NÚMERO en kHz  -> ajusta la frecuencia del generador")
-    print("    (ej: 260   ->  se manda como 260 kHz = 260000 Hz)")
-    print("  - Escribe 'leer'            -> lee Vpp y desfase del osciloscopio")
-    print("  - Escribe 'datos'           -> muestra la tabla guardada hasta ahora")
-    print("  - Escribe 'salir'           -> guarda el CSV y termina")
-    print("=" * 60)
-    print(f"Frecuencia actual: {freq_actual_khz:.3f} kHz\n")
-
+def solicitar_identificador_piezo() -> str:
     while True:
-        entrada = input(f"[{freq_actual_khz:.3f} kHz] Frecuencia (kHz) / 'leer' / 'datos' / 'salir' > ").strip()
+        nombre = input("Identificador del elemento piezoeléctrico a evaluar > ").strip()
+        if nombre:
+            return nombre
+        print("   ⚠️  Debes introducir un identificador.\n")
 
-        if entrada == "":
-            continue
 
-        if entrada.lower() in ("salir", "exit", "q"):
-            break
+# ============================================================
+#   BARRIDO AUTOMÁTICO DE FRECUENCIA
+# ============================================================
+def barrido_automatico(scope: TektronixScope, gen: AFG1022, canal_scope_gen: int, canal_scope_medida: int,
+                        freq_inicio_khz: float, freq_fin_khz: float, paso_khz: float,
+                        segundos_estabilizacion: float):
+    datos = []
+    total_pasos = int(round((freq_fin_khz - freq_inicio_khz) / paso_khz)) + 1
 
-        if entrada.lower() == "datos":
-            if not datos:
-                print("   (todavía no has guardado ningún punto)\n")
-            else:
-                print(f"\n{'Frecuencia (kHz)':>18} | {'Vpp CH_gen (V)':>15} | {'Vpp CH_med (V)':>15} | {'Desfase (°)':>12}")
-                for d in datos:
-                    print(f"{d['frecuencia_kHz']:>18} | {d['vpp_generador_V']:>15} | {d['vpp_medida_V']:>15} | {d['desfase_deg']:>12}")
-                print()
-            continue
+    print("=" * 60)
+    print("BARRIDO AUTOMÁTICO")
+    print("=" * 60)
+    print(f"  De {freq_inicio_khz:.0f} kHz a {freq_fin_khz:.0f} kHz en pasos de {paso_khz:.0f} kHz")
+    print(f"  Estabilización por paso: {segundos_estabilizacion:.1f} s")
+    print("=" * 60 + "\n")
 
-        if entrada.lower() == "leer":
-            vpp_gen = scope.measure_peak_to_peak(canal_scope_gen)
-            vpp_med = scope.measure_peak_to_peak(canal_scope_medida)
-            desfase = scope.measure_phase(canal_scope_gen, canal_scope_medida)
+    for paso in range(total_pasos):
+        freq_khz = freq_inicio_khz + paso * paso_khz
+        gen.set_frequency_khz(freq_khz)
+        time.sleep(segundos_estabilizacion)
 
-            print(f"   → Vpp CH{canal_scope_gen} (generador): {vpp_gen:.4f} V")
-            print(f"   → Vpp CH{canal_scope_medida} (medida):    {vpp_med:.4f} V")
-            print(f"   → Desfase: {desfase:.2f}°")
+        vpp_gen = scope.measure_peak_to_peak(canal_scope_gen)
+        vpp_med = scope.measure_peak_to_peak(canal_scope_medida)
+        desfase = scope.measure_phase(canal_scope_gen, canal_scope_medida)
 
-            ultima_lectura = {
-                "frecuencia_kHz": round(freq_actual_khz, 3),
-                "vpp_generador_V": round(vpp_gen, 4),
-                "vpp_medida_V": round(vpp_med, 4),
-                "desfase_deg": round(desfase, 2),
-                "timestamp": datetime.now().isoformat(timespec="seconds"),
-            }
+        datos.append({
+            "frecuencia_kHz": round(freq_khz, 3),
+            "vpp_generador_V": round(vpp_gen, 4),
+            "vpp_medida_V": round(vpp_med, 4),
+            "desfase_deg": round(desfase, 2),
+        })
 
-            confirmar = input("   ¿Guardar este punto? (s/n) > ").strip().lower()
-            if confirmar == "s":
-                datos.append(ultima_lectura)
-                print("   💾 Punto guardado.\n")
-            else:
-                print("   Punto descartado.\n")
-            continue
+        print(f"[{paso + 1}/{total_pasos}] {freq_khz:.0f} kHz -> "
+              f"Vpp_gen={vpp_gen:.4f} V, Vpp_med={vpp_med:.4f} V, desfase={desfase:.2f}°")
 
-        # Si no es 'leer', 'datos' ni 'salir' -> intentamos interpretarlo como frecuencia en kHz
-        try:
-            freq_khz = float(entrada.replace(",", "."))
-            gen.set_frequency_khz(freq_khz)
-            freq_actual_khz = freq_khz
-            print(f"   ✅ Generador ajustado a {freq_khz:.3f} kHz ({freq_khz*1000:.1f} Hz)\n")
-        except ValueError:
-            print("   ⚠️  No entendí ese valor. Escribe un número (kHz), 'leer', 'datos' o 'salir'.\n")
-
+    print("\n✅ Barrido finalizado.\n")
     return datos
 
 
@@ -287,22 +266,47 @@ def guardar_csv(datos, ruta_salida: str = None):
 # ============================================================
 if __name__ == "__main__":
     # Ajusta estos puertos según tu sistema (revisa con: ls /dev/usbtmc*)
-    PUERTO_OSCILOSCOPIO = "/dev/usbtmc0"
-    PUERTO_GENERADOR = "/dev/usbtmc1"
+    PUERTO_OSCILOSCOPIO = "/dev/usbtmc1"
+    PUERTO_GENERADOR = "/dev/usbtmc0"
 
     CANAL_GENERADOR_SALIDA = 1   # canal físico del AFG1022 que estás usando
     CANAL_SCOPE_GEN = 1          # canal del osciloscopio conectado a la salida del generador
     CANAL_SCOPE_MEDIDA = 2       # canal del osciloscopio conectado a la caída en la resistencia
 
+    FREQ_INICIO_KHZ = 100
+    FREQ_FIN_KHZ = 600
+    PASO_KHZ = 1
+    SEGUNDOS_ESTABILIZACION = 2.0
+
     scope = TektronixScope(PUERTO_OSCILOSCOPIO)
     gen = AFG1022(PUERTO_GENERADOR, canal=CANAL_GENERADOR_SALIDA)
 
     if scope.connect() and gen.connect():
-        if prechequeo(scope, gen, CANAL_SCOPE_GEN, CANAL_SCOPE_MEDIDA):
-            datos = modo_interactivo(scope, gen, CANAL_SCOPE_GEN, CANAL_SCOPE_MEDIDA)
-            guardar_csv(datos)
-        else:
-            print("No se inició el proceso. Revisa los puntos marcados arriba.")
+        piezo_id = None
+        seguir = True
+
+        while seguir:
+            if piezo_id is None:
+                piezo_id = solicitar_identificador_piezo()
+
+            if prechequeo(scope, gen, CANAL_SCOPE_GEN, CANAL_SCOPE_MEDIDA):
+                datos = barrido_automatico(
+                    scope, gen, CANAL_SCOPE_GEN, CANAL_SCOPE_MEDIDA,
+                    FREQ_INICIO_KHZ, FREQ_FIN_KHZ, PASO_KHZ, SEGUNDOS_ESTABILIZACION,
+                )
+                nombre_csv = f"caracterizacion_{piezo_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+                guardar_csv(datos, nombre_csv)
+            else:
+                print("No se realizó el barrido. Revisa los puntos marcados arriba.")
+
+            respuesta = input(
+                "\n¿Qué deseas hacer? [r] repetir barrido / [n] nuevo piezoeléctrico / [s] salir > "
+            ).strip().lower()
+
+            if respuesta == "s":
+                seguir = False
+            elif respuesta == "n":
+                piezo_id = None
 
         scope.disconnect()
         gen.disconnect()
