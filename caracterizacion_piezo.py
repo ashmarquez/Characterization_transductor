@@ -1,5 +1,5 @@
 """
-Caracterización de piezoeléctrico - Fuspine TFM
+Caracterización de piezoeléctrico 
 ================================================
 Barrido automático de frecuencia controlando en conjunto:
     - Generador de funciones Tektronix AFG1022 (fija la frecuencia)

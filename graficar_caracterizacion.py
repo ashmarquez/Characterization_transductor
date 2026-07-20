@@ -1,5 +1,5 @@
 """
-Graficado de caracterización de piezoeléctrico - Fuspine TFM
+Graficado de caracterización de piezoeléctrico 
 ==============================================================
 Lee el CSV generado por el barrido automático (frecuencia_kHz,
 vpp_generador_V, vpp_medida_V, desfase_deg) y grafica en una sola
@@ -14,6 +14,8 @@ Al final guarda la figura como PNG junto al CSV.
 
 import csv
 import matplotlib.pyplot as plt
+import os
+import glob
 
 
 def leer_csv(ruta_csv: str):
@@ -45,6 +47,7 @@ def graficar(frecuencias, vpp_medida, desfase, ruta_csv: str):
     ax_desfase.set_ylabel("Desfase (°)", color=color_desfase)
     linea_desfase, = ax_desfase.plot(frecuencias, desfase, color=color_desfase, label="Desfase")
     ax_desfase.tick_params(axis="y", labelcolor=color_desfase)
+    ax_vpp.grid(True, which="major", linestyle="--", linewidth=0.5, alpha=0.4)
 
     plt.title("Caracterización piezoeléctrico: Vpp y desfase vs. Frecuencia")
 
@@ -54,21 +57,60 @@ def graficar(frecuencias, vpp_medida, desfase, ruta_csv: str):
 
     fig.tight_layout()
 
-    ruta_png = ruta_csv.rsplit(".", 1)[0] + ".png"
+    carpeta_graficas = os.path.join(os.path.dirname(ruta_csv) or ".", "graficas")
+    os.makedirs(carpeta_graficas, exist_ok=True)
+
+    nombre_base = os.path.basename(ruta_csv).rsplit(".", 1)[0]
+    ruta_png = os.path.join(carpeta_graficas, nombre_base + ".png")
+
     fig.savefig(ruta_png, dpi=150)
     print(f"💾 Gráfica guardada en: {ruta_png}")
 
     plt.show()
 
+def elegir_csv() -> str:
+    while True:
+        archivos_csv = sorted(glob.glob("*.csv"))
+        if not archivos_csv:
+            print("❌ No se encontraron archivos CSV en el directorio actual.")
+            ruta =input("escriba la rta cpleta del csv >").strip()
+            if os.path.isfile(ruta):
+                return ruta
+            print("❌ Archivo no encontrado:{ruta} ")
+            continue
+
+        print("Archivos CSV disponibles:")
+        for i, nombre in enumerate(archivos_csv, start=1):
+            print(f"  {i}. {nombre}")
+        
+        entrada = input("SSelecciona un archivo > ").strip()
+        if entrada.isdigit():
+            indice = int(entrada) - 1
+            if 0 <= indice < len(archivos_csv):
+                return archivos_csv[indice]
+            print("❌ Opción inválida. Por favor, selecciona un número válido.")
+            continue
+        
+        if os.pathh.isfile(entrada):
+            return entrada
+        
+        print("❌ Archivo no encontrado: {entrada}. Por favor, selecciona un archivo válido.")
 
 if __name__ == "__main__":
-    ruta_csv = input("Nombre (o ruta) del archivo CSV a graficar > ").strip()
+    seguir = True
 
-    try:
-        frecuencias, vpp_medida, desfase = leer_csv(ruta_csv)
-    except FileNotFoundError:
-        print(f"❌ No se encontró el archivo: {ruta_csv}")
-    except KeyError as e:
-        print(f"❌ El CSV no tiene la columna esperada: {e}")
-    else:
-        graficar(frecuencias, vpp_medida, desfase, ruta_csv)
+    while seguir:
+        ruta_csv = elegir_csv()
+
+        try:
+            frecuencias, vpp_medida, desfase = leer_csv(ruta_csv)
+        except FileNotFoundError:
+            print(f"❌ No se encontró el archivo: {ruta_csv}")
+        except KeyError as e:
+            print(f"❌ El CSV no tiene la columna esperada: {e}")
+        else:
+            graficar(frecuencias, vpp_medida, desfase, ruta_csv)
+
+        respuesta = input("¿Deseas graficar otro archivo? (s/n): ").strip().lower()
+        if respuesta.startswith("n"):
+            seguir = False
