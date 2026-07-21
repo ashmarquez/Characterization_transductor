@@ -227,14 +227,14 @@ def barrido_automatico(scope: TektronixScope, gen: AFG1022, canal_scope_gen: int
         gen.set_frequency_khz(freq_khz)
         time.sleep(segundos_estabilizacion)
 
-        mediciones = 5
+        num_mediciones = 5
 
         vpp_gen_lista = []
         vpp_med_lista = []
         desfase_lista = []
 
-        for i in range(mediciones):
-            vpp_gen_lista.append(scopte.measure_peak_to_peak(canal_scope_gen))
+        for i in range(num_mediciones):
+            vpp_gen_lista.append(scope.measure_peak_to_peak(canal_scope_gen))
             vpp_med_lista.append(scope.measure_peak_to_peak(canal_scope_medida))
             desfase_lista.append(scope.measure_phase(canal_scope_gen, canal_scope_medida))
             
@@ -242,15 +242,21 @@ def barrido_automatico(scope: TektronixScope, gen: AFG1022, canal_scope_gen: int
         vpp_med = sum(vpp_med_lista) / len(vpp_med_lista)
         desfase = sum(desfase_lista) / len(desfase_lista)
 
+        if vpp_med > 0:
+            impedancia = RESISTENCIA * ((vpp_gen - vpp_med) / vpp_med)
+        else:
+            impedancia = float("nan)
+
         datos.append({
             "frecuencia_kHz": round(freq_khz, 3),
             "vpp_generador_V": round(vpp_gen, 4),
             "vpp_medida_V": round(vpp_med, 4),
             "desfase_deg": round(desfase, 2),
+            "impedancia_ohm": round(impedancia,2)
         })
 
         print(f"[{paso + 1}/{total_pasos}] {freq_khz:.0f} kHz -> "
-              f"Vpp_gen={vpp_gen:.4f} V, Vpp_med={vpp_med:.4f} V, desfase={desfase:.2f}°")
+              f"Vpp_gen={vpp_gen:.4f} V, Vpp_med={vpp_med:.4f} V, desfase={desfase:.2f}°, Z={impedancia:.2f} Ω")
 
     print("\n✅ Barrido finalizado.\n")
     return datos
@@ -288,6 +294,7 @@ if __name__ == "__main__":
     FREQ_FIN_KHZ = 600
     PASO_KHZ = 1
     SEGUNDOS_ESTABILIZACION = 2.0
+    RESISTENCIA = 1000
 
     scope = TektronixScope(PUERTO_OSCILOSCOPIO)
     gen = AFG1022(PUERTO_GENERADOR, canal=CANAL_GENERADOR_SALIDA)
