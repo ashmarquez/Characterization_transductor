@@ -74,17 +74,17 @@ def elegir_csv() -> str:
         archivos_csv = sorted(glob.glob("*.csv"))
         if not archivos_csv:
             print("❌ No se encontraron archivos CSV en el directorio actual.")
-            ruta =input("escriba la rta cpleta del csv >").strip()
+            ruta =input("escriba la ruta completa del csv >").strip()
             if os.path.isfile(ruta):
                 return ruta
-            print("❌ Archivo no encontrado:{ruta} ")
+            print("❌ Archivo no encontrado: {ruta}")
             continue
 
         print("Archivos CSV disponibles:")
         for i, nombre in enumerate(archivos_csv, start=1):
             print(f"  {i}. {nombre}")
         
-        entrada = input("SSelecciona un archivo > ").strip()
+        entrada = input("Selecciona un archivo > ").strip()
         if entrada.isdigit():
             indice = int(entrada) - 1
             if 0 <= indice < len(archivos_csv):
