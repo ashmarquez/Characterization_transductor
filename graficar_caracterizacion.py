@@ -31,7 +31,25 @@ def leer_csv(ruta_csv: str):
             desfase.append(float(fila["desfase_deg"]))
 
     return frecuencias, vpp_medida, desfase
+    
+def encontrar_picos(valores, frecuencias, cantidad=2, min_separacion_khz=10):
+    
+    candidatos = []
+    for i in range(1, len(valores) - 1):
+        if valores[i] > valores[i - 1] and valores[i] > valores[i + 1]:
+            candidatos.append((frecuencias[i], valores[i]))
 
+    # Ordenar de mayor a menor valor los picos encontrados
+    candidatos.sort(key=lambda x: x[1], reverse=True)
+
+    picos_seleccionados = []
+    for freq, val in candidatos:
+        if all(abs(freq - f_sel) >= min_separacion_khz for f_sel, _ in picos_seleccionados):
+            picos_seleccionados.append((freq, val))
+        if len(picos_seleccionados) == cantidad:
+            break
+
+    return picos_seleccionados
 
 def graficar(frecuencias, vpp_medida, desfase, ruta_csv: str):
     fig, ax_vpp = plt.subplots(figsize=(10, 6))
@@ -41,14 +59,34 @@ def graficar(frecuencias, vpp_medida, desfase, ruta_csv: str):
     ax_vpp.set_ylabel("Vpp medido (V)", color=color_vpp)
     linea_vpp, = ax_vpp.plot(frecuencias, vpp_medida, color=color_vpp, label="Vpp medido")
     ax_vpp.tick_params(axis="y", labelcolor=color_vpp)
+    ax_vpp.grid(True, which="major", linestyle="--", linewidth=0.5, alpha=0.4)
 
     ax_desfase = ax_vpp.twinx()
     color_desfase = "tab:red"
     ax_desfase.set_ylabel("Desfase (°)", color=color_desfase)
     linea_desfase, = ax_desfase.plot(frecuencias, desfase, color=color_desfase, label="Desfase")
     ax_desfase.tick_params(axis="y", labelcolor=color_desfase)
-    ax_vpp.grid(True, which="major", linestyle="--", linewidth=0.5, alpha=0.4)
+    ax_desfase.axhline(0, color="gray", linestyle="-", linewidth=0.8, zorder=1)
 
+    picos_vpp = encontrar_picos(vpp_medida, frecuencias, cantidad=2)
+    for freq_pico, val_pico in picos_vpp:
+        ax_vpp.axvline(freq_pico, color=color_vpp, linestyle=":", alpha=0.6)
+        ax_vpp.annotate(f"{freq_pico:.1f} kHz",
+                         xy=(freq_pico, val_pico),
+                         xytext=(5, 5), textcoords="offset points",
+                         color=color_vpp, fontsize=8)
+
+    desfase_abs = [abs(d) for d in desfase]
+    picos_desfase = encontrar_picos(desfase_abs, frecuencias, cantidad=2)
+    for freq_pico, _ in picos_desfase:
+        indice = frecuencias.index(freq_pico)
+        valor_real = desfase[indice]
+        ax_desfase.axvline(freq_pico, color=color_desfase, linestyle=":", alpha=0.6)
+        ax_desfase.annotate(f"{freq_pico:.1f} kHz",
+                             xy=(freq_pico, valor_real),
+                             xytext=(5, -12), textcoords="offset points",
+                             color=color_desfase, fontsize=8)
+        
     plt.title("Caracterización piezoeléctrico: Vpp y desfase vs. Frecuencia")
 
     lineas = [linea_vpp, linea_desfase]
