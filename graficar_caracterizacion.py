@@ -66,7 +66,8 @@ def graficar(frecuencias, vpp_medida, desfase, ruta_csv: str):
     fig.savefig(ruta_png, dpi=150)
     print(f"💾 Gráfica guardada en: {ruta_png}")
 
-    plt.show()
+    plt.show(block=False)   
+    plt.pause(0.5)
 
 def elegir_csv() -> str:
     while True:
@@ -91,7 +92,7 @@ def elegir_csv() -> str:
             print("❌ Opción inválida. Por favor, selecciona un número válido.")
             continue
         
-        if os.pathh.isfile(entrada):
+        if os.path.isfile(entrada):
             return entrada
         
         print("❌ Archivo no encontrado: {entrada}. Por favor, selecciona un archivo válido.")
