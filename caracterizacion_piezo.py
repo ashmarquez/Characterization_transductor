@@ -245,7 +245,7 @@ def barrido_automatico(scope: TektronixScope, gen: AFG1022, canal_scope_gen: int
         if vpp_med > 0:
             impedancia = RESISTENCIA * ((vpp_gen - vpp_med) / vpp_med)
         else:
-            impedancia = float("nan)
+            impedancia = float("nan")
 
         datos.append({
             "frecuencia_kHz": round(freq_khz, 3),
