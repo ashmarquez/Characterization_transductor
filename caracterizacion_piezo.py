@@ -227,9 +227,20 @@ def barrido_automatico(scope: TektronixScope, gen: AFG1022, canal_scope_gen: int
         gen.set_frequency_khz(freq_khz)
         time.sleep(segundos_estabilizacion)
 
-        vpp_gen = scope.measure_peak_to_peak(canal_scope_gen)
-        vpp_med = scope.measure_peak_to_peak(canal_scope_medida)
-        desfase = scope.measure_phase(canal_scope_gen, canal_scope_medida)
+        mediciones = 5
+
+        vpp_gen_lista = []
+        vpp_med_lista = []
+        desfase_lista = []
+
+        for i in range(mediciones):
+            vpp_gen_lista.append(scopte.measure_peak_to_peak(canal_scope_gen))
+            vpp_med_lista.append(scope.measure_peak_to_peak(canal_scope_medida))
+            desfase_lista.append(scope.measure_phase(canal_scope_gen, canal_scope_medida))
+            
+        vpp_gen = sum(vpp_gen_lista) / len(vpp_gen_lista)
+        vpp_med = sum(vpp_med_lista) / len(vpp_med_lista)
+        desfase = sum(desfase_lista) / len(desfase_lista)
 
         datos.append({
             "frecuencia_kHz": round(freq_khz, 3),
