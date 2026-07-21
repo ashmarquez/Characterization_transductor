@@ -20,6 +20,7 @@ import glob
 
 def leer_csv(ruta_csv: str):
     frecuencias = []
+    vpp_gen = []
     vpp_medida = []
     desfase = []
     impedancia = []
@@ -29,10 +30,10 @@ def leer_csv(ruta_csv: str):
         for fila in lector:
             frecuencias.append(float(fila["frecuencia_kHz"]))
             vpp_medida.append(float(fila["vpp_medida_V"]))
+            vpp_gen.append(float(fila["vpp_generador_V"]))
             desfase.append(float(fila["desfase_deg"]))
-            impedancia.append(float(fila["impedancia_ohm"]))
 
-    return frecuencias, vpp_medida, desfase, impedancia
+    return frecuencias, vpp_gen, vpp_medida, desfase
     
 def encontrar_picos(valores, frecuencias, cantidad=2, min_separacion_khz=10):
     
@@ -53,14 +54,24 @@ def encontrar_picos(valores, frecuencias, cantidad=2, min_separacion_khz=10):
 
     return picos_seleccionados
 
+def calcular_impedancia(vpp_gen, vpp_med, resistencia):
+    vpp_gen = float(vpp_gen) / (2 * (2 ** 0.5))  # Convertir de Vpp a Vrms
+    vpp_med = float(vpp_med) / (2 * (2 ** 0.5))  # Convertir de Vpp a Vrms
+    
+    if vpp_med > 0:
+        return resistencia * ((vpp_gen - vpp_med) / vpp_med) 
+    else:
+        return float("nan")
+
 def graficar(frecuencias, vpp_medida, desfase, impedancia, ruta_csv: str):
     fig, ax_imp = plt.subplots(figsize=(10, 6))
 
     # --- IMPEDANCIA ---
+    impedancias_kohm = [z / 1000 for z in impedancia]
     color_imp = "tab:blue"
     ax_imp.set_xlabel("Frecuencia (kHz)")
-    ax_imp.set_ylabel("Impedancia (Ω)", color=color_imp)
-    linea_imp, = ax_imp.plot(frecuencias, impedancia, color=color_imp, label="Impedancia")
+    ax_imp.set_ylabel("Impedancia (kΩ)", color=color_imp)
+    linea_imp, = ax_imp.plot(frecuencias, impedancias_kohm, color=color_imp, label="Impedancia")
     ax_imp.tick_params(axis="y", labelcolor=color_imp)
     ax_imp.grid(True, which="major", linestyle="--", linewidth=0.5, alpha=0.4)
 
@@ -85,7 +96,7 @@ def graficar(frecuencias, vpp_medida, desfase, impedancia, ruta_csv: str):
     plt.title("Caracterización piezoeléctrico: Impedancia y desfase vs. Frecuencia")
 
     # --- Picos ---
-    picos_imp = encontrar_picos(impedancia, frecuencias, cantidad=2)
+    picos_imp = encontrar_picos(impedancias_kohm, frecuencias, cantidad=2)
     for freq_pico, val_pico in picos_imp:
         ax_imp.axvline(freq_pico, color=color_imp, linestyle=":", alpha=0.6)
         ax_imp.annotate(f"{freq_pico:.1f} kHz",
@@ -150,12 +161,15 @@ def elegir_csv() -> str:
 
 if __name__ == "__main__":
     seguir = True
+    
+    RESISTENCIA = 1000.0  # ohmios, resistencia en serie con el piezoeléctrico
 
     while seguir:
         ruta_csv = elegir_csv()
 
         try:
-            frecuencias, vpp_medida, desfase, impedancia = leer_csv(ruta_csv)
+            frecuencias, vpp_gen, vpp_medida, desfase = leer_csv(ruta_csv)
+            impedancia = [calcular_impedancia(vpp_gen, vpp_med, RESISTENCIA) for vpp_gen, vpp_med in zip(vpp_gen, vpp_medida)]
         except FileNotFoundError:
             print(f"❌ No se encontró el archivo: {ruta_csv}")
         except KeyError as e:
