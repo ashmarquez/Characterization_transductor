@@ -45,10 +45,9 @@ def encontrar_picos(valores, frecuencias, min_separacion_khz=10):
     picos_seleccionados = [(frecuencias[indice_principal], valores[indice_principal])]
 
     # Encontrar el valle (punto más bajo) después del pico principal
-    valores_despues = valores[indice_principal:]
-    if len(valores_despues) > 1:
-        indice_valle_relativo = min(range(len(valores_despues)), key=lambda i: valores_despues[i])
-        indice_valle = indice_principal + indice_valle_relativo
+    valles_despues = [i for i in indices_valles if i > indice_principal]
+    if valles_despues:
+    indice_valle = min(valles_despues)   # <- el PRIMERO que aparece, no el más profundo
 
         # Pico secundario: el siguiente pico EN FRECUENCIA, pero solo
         # buscando a partir del valle (ya pasada la bajada completa)
