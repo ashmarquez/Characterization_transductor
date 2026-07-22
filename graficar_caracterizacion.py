@@ -36,28 +36,30 @@ def leer_csv(ruta_csv: str):
     return frecuencias, vpp_gen, vpp_medida, desfase
     
 def encontrar_picos(valores, frecuencias, min_separacion_khz=10):
-    indices, _ = find_peaks(valores, distance=min_separacion_khz)
+    indices_picos, _ = find_peaks(valores, distance=min_separacion_khz)
+    valores_invertidos = [-v for v in valores]
+    indices_valles, _ = find_peaks(valores_invertidos, distance=min_separacion_khz)
 
-    if len(indices) == 0:
+    if len(indices_picos) == 0:
         return []
-        
-    indice_principal = max(indices, key=lambda i: valores[i])
+
+    # Pico principal: el más alto de toda la curva
+    indice_principal = max(indices_picos, key=lambda i: valores[i])
     picos_seleccionados = [(frecuencias[indice_principal], valores[indice_principal])]
 
-    # Encontrar el valle (punto más bajo) después del pico principal
+    # Primer valle LOCAL después del pico principal (no el más profundo de toda la curva)
     valles_despues = [i for i in indices_valles if i > indice_principal]
     if valles_despues:
-    indice_valle = min(valles_despues)   # <- el PRIMERO que aparece, no el más profundo
+        indice_valle = min(valles_despues)
 
-        # Pico secundario: el siguiente pico EN FRECUENCIA, pero solo
-        # buscando a partir del valle (ya pasada la bajada completa)
-        candidatos_despues_del_valle = [i for i in indices if i > indice_valle]
+        # Pico secundario: el siguiente pico después de ese primer valle
+        candidatos_despues_del_valle = [i for i in indices_picos if i > indice_valle]
         if candidatos_despues_del_valle:
             indice_secundario = min(candidatos_despues_del_valle)
             picos_seleccionados.append((frecuencias[indice_secundario], valores[indice_secundario]))
 
     return picos_seleccionados
-
+    
 def calcular_impedancia(vpp_gen, vpp_med, resistencia):
     vpp_gen = float(vpp_gen) / (2 * (2 ** 0.5))  # Convertir de Vpp a Vrms
     vpp_med = float(vpp_med) / (2 * (2 ** 0.5))  # Convertir de Vpp a Vrms
