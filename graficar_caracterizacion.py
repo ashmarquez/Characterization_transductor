@@ -35,12 +35,20 @@ def leer_csv(ruta_csv: str):
 
     return frecuencias, vpp_gen, vpp_medida, desfase
     
-def encontrar_picos(valores, frecuencias, cantidad=2, min_separacion_khz=10):
+def encontrar_picos(valores, frecuencias, min_separacion_khz=10):
     indices, _ = find_peaks(valores, distance=min_separacion_khz)
-    
-    indices_ordenados = sorted(indices, key=lambda i: valores[i], reverse=True)
 
-    picos_seleccionados = [(frecuencias[i], valores[i]) for i in indices_ordenados[:cantidad]]
+    if len(indices) == 0:
+        return []
+        
+    indice_principal = max(indices, key=lambda i: valores[i])
+    picos_seleccionados = [(frecuencias[indice_principal], valores[indice_principal])]
+
+    candidatos_despues = [i for i in indices if i > indice_principal]
+    if candidatos_despues:
+        indice_secundario = min(candidatos_despues)  # el más cercano en frecuencia
+        picos_seleccionados.append((frecuencias[indice_secundario], valores[indice_secundario]))
+
     return picos_seleccionados
 
 def calcular_impedancia(vpp_gen, vpp_med, resistencia):
@@ -85,7 +93,7 @@ def graficar(frecuencias, vpp_medida, desfase, impedancia, ruta_csv: str):
     plt.title("Caracterización piezoeléctrico: Impedancia y desfase vs. Frecuencia")
 
     # --- Picos ---
-    picos_imp = encontrar_picos(impedancias_kohm, frecuencias, cantidad=2)
+    picos_imp = encontrar_picos(impedancias_kohm, frecuencias)
     for freq_pico, val_pico in picos_imp:
         ax_imp.axvline(freq_pico, color=color_imp, linestyle=":", alpha=0.6)
         ax_imp.annotate(f"{freq_pico:.1f} kHz",
