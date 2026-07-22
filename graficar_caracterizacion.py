@@ -7,7 +7,7 @@ figura con doble eje Y:
 
     - Eje X: frecuencia (kHz)
     - Eje Y izquierdo: Vpp medido (V)
-    - Eje Y derecho: desfase (grados)
+    - Eje Y derecho: desfase (grados)as
 
 Al final guarda la figura como PNG junto al CSV.
 """
