@@ -36,11 +36,9 @@ def leer_csv(ruta_csv: str):
     return frecuencias, vpp_gen, vpp_medida, desfase
     
 def encontrar_picos(valores, frecuencias, min_separacion_khz=10):
-    indices_picos, _ = find_peaks(valores, distance=min_separacion_khz)
-    valores_invertidos = [-v for v in valores]
-    indices_valles, _ = find_peaks(valores_invertidos, distance=min_separacion_khz)
+    indices, propiedades = find_peaks(valores, distance=min_separacion_khz, prominence=0)
 
-    if len(indices_picos) == 0:
+    if len(indices) == 0:
         return []
 
     # Pico principal: el más alto de toda la curva
@@ -48,7 +46,7 @@ def encontrar_picos(valores, frecuencias, min_separacion_khz=10):
     picos_seleccionados = [(frecuencias[indice_principal], valores[indice_principal])]
 
     # Primer valle LOCAL después del pico principal (no el más profundo de toda la curva)
-    valles_despues = [i for i in indices_valles if i > indice_principal + min_separacion_khz]
+    valles_despues = [i for i in indices_valles if i > indice_principal + min_separacion_khz]]
     if valles_despues:
         indice_valle = min(valles_despues)
 
