@@ -53,6 +53,19 @@ def encontrar_picos(valores, frecuencias, min_separacion_khz=10):
     top_indices.sort()
 
     return [(frecuencias[i], valores[i]) for i in top_indices]
+
+def encontrar_valles(valores, frecuencias, min_separacion_khz=10):
+    valores_invertidos = [-v for v in valores]
+    indices, propiedades = find_peaks(valores_invertidos, distance=min_separacion_khz, prominence=0)
+
+    if len(indices) == 0:
+        return []
+
+    orden = sorted(range(len(indices)), key=lambda k: propiedades["prominences"][k], reverse=True)
+    top_indices = [indices[k] for k in orden[:2]]
+    top_indices.sort()
+
+    return [(frecuencias[i], valores[i]) for i in top_indices]
     
 def calcular_impedancia(vpp_gen, vpp_med, resistencia):
     vpp_gen = float(vpp_gen) / (2 * (2 ** 0.5))  # Convertir de Vpp a Vrms
@@ -107,6 +120,17 @@ def graficar(frecuencias, vpp_medida, desfase, impedancia, ruta_csv: str):
     lineas = [linea_imp, linea_desfase, linea_vpp]
     etiquetas = [l.get_label() for l in lineas]
     ax_imp.legend(lineas, etiquetas, loc="upper right")
+
+    # --- Valles ---
+    
+    valles_imp = encontrar_valles(impedancias_kohm, frecuencias)
+    color_valle = "tab:green"
+    for freq_valle, val_valle in valles_imp:
+        ax_imp.axvline(freq_valle, color=color_valle, linestyle=":", alpha=0.6)
+        ax_imp.annotate(f"{freq_valle:.1f} kHz",
+                         xy=(freq_valle, val_valle),
+                         xytext=(5, -12), textcoords="offset points",
+                         color=color_valle, fontsize=8)
 
     fig.tight_layout()
 
