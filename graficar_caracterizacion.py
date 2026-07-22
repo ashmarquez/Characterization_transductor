@@ -111,7 +111,7 @@ def graficar(frecuencias, vpp_medida, desfase, impedancia, ruta_csv: str):
     # --- Picos ---
     picos_imp = encontrar_picos(impedancias_kohm, frecuencias)
     for freq_pico, val_pico in picos_imp:
-        ax_imp.axvline(freq_pico, color=color_imp, linestyle=":", alpha=0.6)
+        ax_imp.axvline(freq_pico, color=color_imp, linestyle=":", alpha=0.8)
         ax_imp.annotate(f"{freq_pico:.1f} kHz",
                          xy=(freq_pico, val_pico),
                          xytext=(5, 5), textcoords="offset points",
@@ -124,9 +124,9 @@ def graficar(frecuencias, vpp_medida, desfase, impedancia, ruta_csv: str):
     # --- Valles ---
     
     valles_imp = encontrar_valles(impedancias_kohm, frecuencias)
-    color_valle = "tab:green"
+    color_valle = "black"
     for freq_valle, val_valle in valles_imp:
-        ax_imp.axvline(freq_valle, color=color_valle, linestyle=":", alpha=0.6)
+        ax_imp.axvline(freq_valle, color=color_valle, linestyle=":", alpha=0.8)
         ax_imp.annotate(f"{freq_valle:.1f} kHz",
                          xy=(freq_valle, val_valle),
                          xytext=(5, -12), textcoords="offset points",
