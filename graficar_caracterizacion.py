@@ -48,7 +48,7 @@ def encontrar_picos(valores, frecuencias, min_separacion_khz=10):
     picos_seleccionados = [(frecuencias[indice_principal], valores[indice_principal])]
 
     # Primer valle LOCAL después del pico principal (no el más profundo de toda la curva)
-    valles_despues = [i for i in indices_valles if i > indice_principal + min_separacion_khz]]
+    valles_despues = [i for i in indices_valles if i > indice_principal + min_separacion_khz]
     if valles_despues:
         indice_valle = min(valles_despues)
 
