@@ -41,22 +41,18 @@ def encontrar_picos(valores, frecuencias, min_separacion_khz=10):
     if len(indices) == 0:
         return []
 
-    # Pico principal: el más alto de toda la curva
-    indice_principal = max(indices_picos, key=lambda i: valores[i])
-    picos_seleccionados = [(frecuencias[indice_principal], valores[indice_principal])]
+    # Ordenar los picos encontrados por PROMINENCIA (qué tanto se destacan
+    # realmente del entorno), no por altura absoluta
+    orden = sorted(range(len(indices)), key=lambda k: propiedades["prominences"][k], reverse=True)
 
-    # Primer valle LOCAL después del pico principal (no el más profundo de toda la curva)
-    valles_despues = [i for i in indices_valles if i > indice_principal + min_separacion_khz]]
-    if valles_despues:
-        indice_valle = min(valles_despues)
+    # Tomar los 2 picos más prominentes
+    top_indices = [indices[k] for k in orden[:2]]
 
-        # Pico secundario: el siguiente pico después de ese primer valle
-        candidatos_despues_del_valle = [i for i in indices_picos if i > indice_valle]
-        if candidatos_despues_del_valle:
-            indice_secundario = min(candidatos_despues_del_valle)
-            picos_seleccionados.append((frecuencias[indice_secundario], valores[indice_secundario]))
+    # Reordenar por frecuencia, para que en la gráfica aparezcan en el
+    # orden natural (principal primero, secundario después)
+    top_indices.sort()
 
-    return picos_seleccionados
+    return [(frecuencias[i], valores[i]) for i in top_indices]
     
 def calcular_impedancia(vpp_gen, vpp_med, resistencia):
     vpp_gen = float(vpp_gen) / (2 * (2 ** 0.5))  # Convertir de Vpp a Vrms
