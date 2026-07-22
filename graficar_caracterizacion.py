@@ -16,7 +16,7 @@ import csv
 import matplotlib.pyplot as plt
 import os
 import glob
-
+from scipy.signal import find_peaks
 
 def leer_csv(ruta_csv: str):
     frecuencias = []
@@ -36,22 +36,11 @@ def leer_csv(ruta_csv: str):
     return frecuencias, vpp_gen, vpp_medida, desfase
     
 def encontrar_picos(valores, frecuencias, cantidad=2, min_separacion_khz=10):
+    indices, _ = find_peaks(valores, distance=min_separacion_khz)
     
-    candidatos = []
-    for i in range(1, len(valores) - 1):
-        if valores[i] > valores[i - 1] and valores[i] > valores[i + 1]:
-            candidatos.append((frecuencias[i], valores[i]))
+    indices_ordenados = sorted(indices, key=lambda i: valores[i], reverse=True)
 
-    # Ordenar de mayor a menor valor los picos encontrados
-    candidatos.sort(key=lambda x: x[1], reverse=True)
-
-    picos_seleccionados = []
-    for freq, val in candidatos:
-        if all(abs(freq - f_sel) >= min_separacion_khz for f_sel, _ in picos_seleccionados):
-            picos_seleccionados.append((freq, val))
-        if len(picos_seleccionados) == cantidad:
-            break
-
+    picos_seleccionados = [(frecuencias[i], valores[i]) for i in indices_ordenados[:cantidad]]
     return picos_seleccionados
 
 def calcular_impedancia(vpp_gen, vpp_med, resistencia):
@@ -103,18 +92,7 @@ def graficar(frecuencias, vpp_medida, desfase, impedancia, ruta_csv: str):
                          xy=(freq_pico, val_pico),
                          xytext=(5, 5), textcoords="offset points",
                          color=color_imp, fontsize=8)
-
-    desfase_abs = [abs(d) for d in desfase]
-    picos_desfase = encontrar_picos(desfase_abs, frecuencias, cantidad=2)
-    for freq_pico, _ in picos_desfase:
-        indice = frecuencias.index(freq_pico)
-        valor_real = desfase[indice]
-        ax_desfase.axvline(freq_pico, color=color_desfase, linestyle=":", alpha=0.6)
-        ax_desfase.annotate(f"{freq_pico:.1f} kHz",
-                             xy=(freq_pico, valor_real),
-                             xytext=(5, -12), textcoords="offset points",
-                             color=color_desfase, fontsize=8)
-
+        
     lineas = [linea_imp, linea_desfase, linea_vpp]
     etiquetas = [l.get_label() for l in lineas]
     ax_imp.legend(lineas, etiquetas, loc="upper right")
