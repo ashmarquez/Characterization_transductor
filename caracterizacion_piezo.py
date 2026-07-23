@@ -249,7 +249,7 @@ def barrido_automatico(scope: TektronixScope, gen: AFG1022, canal_scope_gen: int
             "desfase_deg": round(desfase, 2),
         })
 
-        print(f"[{paso + 1}/{total_pasos}] {freq_khz:.0f} kHz -> "
+        print(f"[{paso + 1}/{total_pasos}] {freq_khz:.2f} kHz -> "
               f"Vpp_gen={vpp_gen:.4f} V, Vpp_med={vpp_med:.4f} V, desfase={desfase:.2f}°")
 
     print("\n✅ Barrido finalizado.\n")
