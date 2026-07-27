@@ -41,15 +41,13 @@ def encontrar_picos(valores, frecuencias, min_separacion_khz=10):
     if len(indices) == 0:
         return []
 
-    # Ordenar los picos encontrados por PROMINENCIA (qué tanto se destacan
-    # realmente del entorno), no por altura absoluta
+    # Usa prominencia para obervar los picos mas significativos con respecto a su entorno
     orden = sorted(range(len(indices)), key=lambda k: propiedades["prominences"][k], reverse=True)
 
     # Tomar los 2 picos más prominentes
     top_indices = [indices[k] for k in orden[:2]]
 
-    # Reordenar por frecuencia, para que en la gráfica aparezcan en el
-    # orden natural (principal primero, secundario después)
+    # Reordenar por frecuencia
     top_indices.sort()
 
     return [(frecuencias[i], valores[i]) for i in top_indices]
