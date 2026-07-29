@@ -141,9 +141,39 @@ def graficar(frecuencias, vpp_medida, desfase, impedancia, ruta_csv: str):
     plt.show(block=False)
     plt.pause(0.5)
 
-def elegir_csv() -> str:
+def elegir_carpeta() -> str:
+    carpetas = sorted(
+        d for d in os.listdir(".")
+        if os.path.isdir(d) and d != "graficas"
+    )
+
+    if not carpetas:
+        print("❌ No se encontraron subcarpetas en el directorio actual.")
+        return "."  
+
+    print("Carpetas disponibles:")
+    for i, nombre in enumerate(carpetas, start=1):
+        cantidad_csv = len(glob.glob(os.path.join(nombre, "*.csv")))
+        print(f"  {i}. {nombre}  ({cantidad_csv} CSV dentro)")
+
     while True:
-        archivos_csv = sorted(glob.glob("*.csv"))
+        entrada = input("Selecciona una carpeta > ").strip()
+
+        if entrada.isdigit():
+            indice = int(entrada) - 1
+            if 0 <= indice < len(carpetas):
+                return carpetas[indice]
+            print(f"❌ Número fuera de rango, elige entre 1 y {len(carpetas)}\n")
+            continue
+
+        if os.path.isdir(entrada):
+            return entrada
+
+        print(f"❌ Carpeta no encontrada: {entrada}\n")
+
+def elegir_csv(carpeta: str) -> str:
+    while True:
+        archivos_csv = sorted(glob.glob(os.path.join(carpeta,"*.csv")))
         if not archivos_csv:
             print("❌ No se encontraron archivos CSV en el directorio actual.")
             ruta =input("escriba la ruta completa del csv >").strip()
@@ -174,8 +204,10 @@ if __name__ == "__main__":
     
     RESISTENCIA = 1000.0  # ohmios, resistencia en serie con el piezoeléctrico
 
+    carpeta = elegir_carpeta()
+
     while seguir:
-        ruta_csv = elegir_csv()
+        ruta_csv = elegir_csv(carpeta)
 
         try:
             frecuencias, vpp_gen, vpp_medida, desfase = leer_csv(ruta_csv)
