@@ -18,6 +18,7 @@ import glob
 import os
 import statistics
 import matplotlib.pyplot as plt
+from scipy.signal import find_peaks
 
 
 RESISTENCIA = 1000.0  # ohmios, resistencia en serie con el piezoeléctrico
@@ -32,6 +33,18 @@ def calcular_impedancia(vpp_gen, vpp_med, resistencia):
     else:
         return float("nan")
 
+def encontrar_valles(valores, frecuencias, min_separacion_khz=10):
+    valores_invertidos = [-v for v in valores]
+    indices, propiedades = find_peaks(valores_invertidos, distance=min_separacion_khz, prominence=0)
+
+    if len(indices) == 0:
+        return []
+
+    orden = sorted(range(len(indices)), key=lambda k: propiedades["prominences"][k], reverse=True)
+    top_indices = [indices[k] for k in orden[:2]]
+    top_indices.sort()
+
+    return [(frecuencias[i], valores[i]) for i in top_indices]
 
 def elegir_carpeta() -> str:
 
@@ -129,22 +142,52 @@ def guardar_csv(frecuencias, imp_media, imp_std, desfase_media, desfase_std, rut
 
     print(f"💾 Resumen guardado en: {ruta_salida}")
 
-def graficar_banda(frecuencias, media, desviacion, titulo, etiqueta_y, color, ruta_png):
-    fig, ax = plt.subplots(figsize=(10, 6))
+def grafica(frecuencias, imp_media, imp_std, desfase_media, desfase_std, nombre_base, ruta_png):
+    fig, ax_imp = plt.subplots(figsize=(10, 6))
 
-    limite_superior = [m + s for m, s in zip(media, desviacion)]
-    limite_inferior = [m - s for m, s in zip(media, desviacion)]
+    # --- IMPEDANCIA ---
+    color_imp = "tab:blue"
+    imp_media = [z / 1000 for z in imp_media]
+    imp_std = [z / 1000 for z in imp_std]
+    imp_sup = [m + s for m, s in zip(imp_media, imp_std)]
+    imp_inf = [m - s for m, s in zip(imp_media, imp_std)]
 
-    ax.plot(frecuencias, media, color=color, label="Promedio")
-    ax.fill_between(frecuencias, limite_inferior, limite_superior,
-                     color=color, alpha=0.25, label="± 1 desviación estándar")
+    ax_imp.set_xlabel("Frecuencia (kHz)")
+    ax_imp.set_ylabel("Impedancia (kΩ)", color=color_imp)
+    linea_imp, = ax_imp.plot(frecuencias, imp_media, color=color_imp, label="Impedancia (promedio)")
+    ax_imp.fill_between(frecuencias, imp_inf, imp_sup, color=color_imp, alpha=0.25)
+    ax_imp.tick_params(axis="y", labelcolor=color_imp)
+    ax_imp.grid(True, which="major", linestyle="--", linewidth=0.5, alpha=0.4)
 
-    ax.set_xlabel("Frecuencia (kHz)")
-    ax.set_ylabel(etiqueta_y, color=color)
-    ax.tick_params(axis="y", labelcolor=color)
-    ax.grid(True, which="major", linestyle="--", linewidth=0.5, alpha=0.4)
-    ax.legend(loc="upper right")
-    plt.title(titulo)
+    # --- DESFASE ---
+    ax_desfase = ax_imp.twinx()
+    color_desfase = "tab:red"
+    des_sup = [m + s for m, s in zip(desfase_media, desfase_std)]
+    des_inf = [m - s for m, s in zip(desfase_media, desfase_std)]
+
+    ax_desfase.set_ylabel("Desfase (°)", color=color_desfase)
+    linea_desfase, = ax_desfase.plot(frecuencias, desfase_media, color=color_desfase, label="Desfase (promedio)")
+    ax_desfase.fill_between(frecuencias, des_inf, des_sup, color=color_desfase, alpha=0.25)
+    ax_desfase.tick_params(axis="y", labelcolor=color_desfase)
+
+    # Línea horizontal en 0°
+    ax_desfase.axhline(0, color="gray", linestyle="-", linewidth=0.8, zorder=1)
+
+    plt.title(f"Impedancia y desfase (promedio ± desv. estándar) - {nombre_base}")
+
+    # --- Valles ---
+    valles_imp = encontrar_valles(imp_media, frecuencias)
+    color_valle = "black"
+    for freq_valle, val_valle in valles_imp:
+        ax_imp.axvline(freq_valle, color=color_valle, linestyle=":", alpha=0.8)
+        ax_imp.annotate(f"{freq_valle:.1f} kHz",
+                         xy=(freq_valle, val_valle),
+                         xytext=(5, -12), textcoords="offset points",
+                         color=color_valle, fontsize=8)
+
+    lineas = [linea_imp, linea_desfase]
+    etiquetas = [l.get_label() for l in lineas]
+    ax_imp.legend(lineas, etiquetas, loc="upper right")
 
     fig.tight_layout()
     fig.savefig(ruta_png, dpi=150)
@@ -167,27 +210,17 @@ if __name__ == "__main__":
         except KeyError as e:
             print(f"❌ Algún CSV no tiene la columna esperada: {e}")
         else:
-            carpeta_graficas = os.path.join(carpeta, "graficas")
+            carpeta_graficas = os.path.join(carpeta, "caracterizacion_transductor")
             os.makedirs(carpeta_graficas, exist_ok=True)
             nombre_base = os.path.basename(os.path.normpath(carpeta))
             guardar_csv(frecuencias, imp_media, imp_std, desfase_media, desfase_std,
                         ruta_salida=os.path.join(carpeta_graficas, f"{nombre_base}_resumen.csv"),
             )
 
-            graficar_banda(
-                frecuencias, imp_media, imp_std,
-                titulo=f"Impedancia promedio ± desv. estándar - {nombre_base}",
-                etiqueta_y="Impedancia (Ω)",
-                color="tab:blue",
-                ruta_png=os.path.join(carpeta_graficas, f"{nombre_base}_impedancia.png"),
-            )
-
-            graficar_banda(
-                frecuencias, desfase_media, desfase_std,
-                titulo=f"Desfase promedio ± desv. estándar - {nombre_base}",
-                etiqueta_y="Desfase (°)",
-                color="tab:red",
-                ruta_png=os.path.join(carpeta_graficas, f"{nombre_base}_desfase.png"),
+            grafica(
+                frecuencias, imp_media, imp_std, desfase_media, desfase_std,
+                nombre_base = nombre_base,
+                ruta_png=os.path.join(carpeta_graficas, f"{nombre_base}_impedancia_desfase.png"),
             )
 
         respuesta = input("\n¿Deseas procesar otra carpeta/transductor? (s/n) > ").strip().lower()

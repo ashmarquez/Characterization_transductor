@@ -73,7 +73,7 @@ def calcular_impedancia(vpp_gen, vpp_med, resistencia):
     else:
         return float("nan")
 
-def graficar(frecuencias, vpp_medida, desfase, impedancia, ruta_csv: str):
+def graficar(frecuencias, desfase, impedancia, ruta_csv: str):
     fig, ax_imp = plt.subplots(figsize=(10, 6))
 
     # --- IMPEDANCIA ---
@@ -93,17 +93,17 @@ def graficar(frecuencias, vpp_medida, desfase, impedancia, ruta_csv: str):
     ax_desfase.tick_params(axis="y", labelcolor=color_desfase)
 
     ax_desfase.axhline(0, color="gray", linestyle="-", linewidth=0.8, zorder=1)
-
+    
     # ---  VPP  ---
-    ax_vpp = ax_imp.twinx()
-    ax_vpp.yaxis.set_visible(False)
-    for spine in ax_vpp.spines.values():
-        spine.set_visible(False)
-    color_vpp = "gray"
-    linea_vpp, = ax_vpp.plot(frecuencias, vpp_medida, color=color_vpp,
-                              linestyle="--", alpha=0.5, label="Vpp medido (referencia)")
-
-    plt.title("Caracterización piezoeléctrico: Impedancia y desfase vs. Frecuencia")
+    #ax_vpp = ax_imp.twinx()
+    #ax_vpp.yaxis.set_visible(False)
+    #for spine in ax_vpp.spines.values():
+    #    spine.set_visible(False)
+    #color_vpp = "gray"
+    #linea_vpp, = ax_vpp.plot(frecuencias, vpp_medida, color=color_vpp,
+    #                          linestyle="--", alpha=0.5, label="Vpp medido (referencia)")
+    
+    #plt.title("Caracterización piezoeléctrico: Impedancia y desfase vs. Frecuencia")
 
     # --- Picos ---
     picos_imp = encontrar_picos(impedancias_kohm, frecuencias)
@@ -114,12 +114,11 @@ def graficar(frecuencias, vpp_medida, desfase, impedancia, ruta_csv: str):
                          xytext=(5, 5), textcoords="offset points",
                          color=color_imp, fontsize=8)
         
-    lineas = [linea_imp, linea_desfase, linea_vpp]
+    lineas = [linea_imp, linea_desfase]
     etiquetas = [l.get_label() for l in lineas]
     ax_imp.legend(lineas, etiquetas, loc="upper right")
-
+   
     # --- Valles ---
-    
     valles_imp = encontrar_valles(impedancias_kohm, frecuencias)
     color_valle = "black"
     for freq_valle, val_valle in valles_imp:
@@ -217,7 +216,7 @@ if __name__ == "__main__":
         except KeyError as e:
             print(f"❌ El CSV no tiene la columna esperada: {e}")
         else:
-            graficar(frecuencias, vpp_medida, desfase, impedancia, ruta_csv)
+            graficar(frecuencias, desfase, impedancia, ruta_csv)
 
         respuesta = input("¿Deseas graficar otro archivo? (s/n): ").strip().lower()
         if respuesta.startswith("n"):
