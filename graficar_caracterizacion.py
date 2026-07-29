@@ -23,7 +23,6 @@ def leer_csv(ruta_csv: str):
     vpp_gen = []
     vpp_medida = []
     desfase = []
-    impedancia = []
     
     with open(ruta_csv, "r", encoding="utf-8") as f:
         lector = csv.DictReader(f)
