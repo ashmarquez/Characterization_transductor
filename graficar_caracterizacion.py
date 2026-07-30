@@ -141,31 +141,41 @@ def graficar(frecuencias, desfase, impedancia, ruta_csv: str):
     plt.pause(0.5)
 
 def elegir_carpeta() -> str:
-    carpetas = sorted(
+    while True:
+        carpetas = sorted(
         d for d in os.listdir(".")
         if os.path.isdir(d) and d != "graficas"
-    )
+        )
+        csvs_sueltos = sorted(glob.glob("*.csv"))
 
-    if not carpetas:
-        print("❌ No se encontraron subcarpetas en el directorio actual.")
-        return "."  
+        opciones =carpetas + csvs_sueltos
 
-    print("Carpetas disponibles:")
-    for i, nombre in enumerate(carpetas, start=1):
-        cantidad_csv = len(glob.glob(os.path.join(nombre, "*.csv")))
-        print(f"  {i}. {nombre}  ({cantidad_csv} CSV dentro)")
+        if not opciones:
+            print("❌ No se encontraron carpetas ni archivos CSV en el directorio actual.")
+            ruta = input("Escribe la ruta completa (carpeta o CSV) > ").strip()
+            if os.path.isdir(ruta) or os.path.isfile(ruta):
+                return ruta
+            print(f"❌ No encontrado: {ruta}\n")
+            continue  
 
-    while True:
+        print("Opciones disponibles:")
+        for i, nombre in enumerate(opciones, start=1):
+            if os.path.isdir(nombre):
+                cantidad_csv = len(glob.glob(os.path.join(nombre, "*.csv")))
+                print(f"  {i}. {nombre}  ({cantidad_csv} CSV dentro)")
+            else:
+                print(f"  {i}. {nombre}  (CSV suelto)")
+
         entrada = input("Selecciona una carpeta > ").strip()
 
         if entrada.isdigit():
             indice = int(entrada) - 1
-            if 0 <= indice < len(carpetas):
-                return carpetas[indice]
-            print(f"❌ Número fuera de rango, elige entre 1 y {len(carpetas)}\n")
+            if 0 <= indice < len(opciones):
+                return opciones[indice]
+            print(f"❌ Número fuera de rango, elige entre 1 y {len(opciones)}\n")
             continue
 
-        if os.path.isdir(entrada):
+        if os.path.isdir(entrada) or os.path.isfile(entrada):
             return entrada
 
         print(f"❌ Carpeta no encontrada: {entrada}\n")
@@ -206,7 +216,12 @@ if __name__ == "__main__":
     carpeta = elegir_carpeta()
 
     while seguir:
-        ruta_csv = elegir_csv(carpeta)
+        seleccion = elegir_carpeta()
+
+        if os.path.isfile(seleccion):
+            ruta_csv = elegir_csv(carpeta)
+        else: 
+            ruta_csv = elegir_csv(seleccion)
 
         try:
             frecuencias, vpp_gen, vpp_medida, desfase = leer_csv(ruta_csv)
