@@ -281,8 +281,8 @@ if __name__ == "__main__":
     PUERTO_GENERADOR = "/dev/usbtmc0"
 
     CANAL_GENERADOR_SALIDA = 1   # canal físico del AFG1022 que estás usando
-    CANAL_SCOPE_GEN = 1          # canal del osciloscopio conectado a la salida del generador
-    CANAL_SCOPE_MEDIDA = 2       # canal del osciloscopio conectado a la caída en la resistencia
+    CANAL_SCOPE_GEN = 2          # canal del osciloscopio conectado a la salida del generador
+    CANAL_SCOPE_MEDIDA = 1       # canal del osciloscopio conectado a la caída en la resistencia
 
     FREQ_INICIO_KHZ = 100
     FREQ_FIN_KHZ = 600
