@@ -213,13 +213,11 @@ if __name__ == "__main__":
     
     RESISTENCIA = 1000.0  # ohmios, resistencia en serie con el piezoeléctrico
 
-    carpeta = elegir_carpeta()
-
     while seguir:
         seleccion = elegir_carpeta()
 
         if os.path.isfile(seleccion):
-            ruta_csv = elegir_csv(carpeta)
+            ruta_csv = seleccion
         else: 
             ruta_csv = elegir_csv(seleccion)
 
