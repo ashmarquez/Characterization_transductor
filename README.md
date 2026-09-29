@@ -58,3 +58,23 @@ Los parámetros del barrido (frecuencia inicial/final, paso y segundos de estabi
 ## Datos de salida
 
 Cada punto guardado incluye frecuencia (kHz), Vpp del canal del generador, Vpp del canal de medida y desfase (°) — sin timestamp. Al terminar el barrido, los datos se exportan a un archivo `caracterizacion_<identificador_piezo>_<fecha>_<hora>.csv` en el directorio actual.
+
+## Graficado individual
+
+`graficar_caracterizacion.py` lee un CSV de un barrido (o todos los de una carpeta, a elegir de forma interactiva), calcula la impedancia a partir de Vpp del generador, Vpp medido y una resistencia en serie (`RESISTENCIA`, por defecto 1000 Ω), y genera una figura con impedancia (kΩ) y desfase (°) frente a frecuencia, marcando los picos y valles más prominentes.
+
+```bash
+uv run graficar_caracterizacion.py
+```
+
+La gráfica se guarda como PNG en una subcarpeta `graficas/` junto al CSV de origen.
+
+## Resumen por transductor
+
+`line_plot_array_transductor.py` procesa todos los CSV de una carpeta (los 32 elementos de un transductor) y calcula la media y desviación estándar de impedancia y desfase para cada frecuencia, generando una gráfica de línea con banda sombreada que muestra la dispersión entre elementos.
+
+```bash
+uv run line_plot_array_transductor.py
+```
+
+Cada transductor debe tener su propia carpeta con sus CSV dentro (por ejemplo `caracterizacion_left_transducer/`, `caracterizacion_right_transducer/`). El script guarda un CSV resumen (`<carpeta>_resumen.csv`) y el PNG de la gráfica (`<carpeta>_impedancia_desfase.png`) en una subcarpeta `caracterizacion_transductor/` dentro de la carpeta del transductor.
