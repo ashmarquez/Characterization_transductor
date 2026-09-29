@@ -162,9 +162,9 @@ def elegir_carpeta() -> str:
         for i, nombre in enumerate(opciones, start=1):
             if os.path.isdir(nombre):
                 cantidad_csv = len(glob.glob(os.path.join(nombre, "*.csv")))
-                print(f"  {i}. {nombre}  ({cantidad_csv} CSV dentro)")
+                print(f"  {i}. {nombre}")
             else:
-                print(f"  {i}. {nombre}  (CSV suelto)")
+                print(f"  {i}. {nombre}")
 
         entrada = input("Selecciona una carpeta > ").strip()
 
