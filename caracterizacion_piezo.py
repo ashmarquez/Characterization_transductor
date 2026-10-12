@@ -264,7 +264,7 @@ def guardar_csv(datos, ruta_salida: str = None):
         print("No hay datos guardados, no se genera CSV.")
         return
     if ruta_salida is None:
-        ruta_salida = f"caracterizacion_piezo_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+        ruta_salida = f"caracterizacion_agua_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
     with open(ruta_salida, "w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=list(datos[0].keys()))
         writer.writeheader()
@@ -277,17 +277,17 @@ def guardar_csv(datos, ruta_salida: str = None):
 # ============================================================
 if __name__ == "__main__":
     # Ajusta estos puertos según tu sistema (revisa con: ls /dev/usbtmc*)
-    PUERTO_OSCILOSCOPIO = "/dev/usbtmc1"
-    PUERTO_GENERADOR = "/dev/usbtmc0"
+    PUERTO_OSCILOSCOPIO = "/dev/usbtmc0"
+    PUERTO_GENERADOR = "/dev/usbtmc1"
 
-    CANAL_GENERADOR_SALIDA = 1   # canal físico del AFG1022 que estás usando
-    CANAL_SCOPE_GEN = 2          # canal del osciloscopio conectado a la salida del generador
-    CANAL_SCOPE_MEDIDA = 1       # canal del osciloscopio conectado a la caída en la resistencia
+    CANAL_GENERADOR_SALIDA = 2   # canal físico del AFG1022 que estás usando
+    CANAL_SCOPE_GEN = 1          # canal del osciloscopio conectado a la salida del generador
+    CANAL_SCOPE_MEDIDA = 2       # canal del osciloscopio conectado a la caída en la resistencia
 
     FREQ_INICIO_KHZ = 100
     FREQ_FIN_KHZ = 600
     PASO_KHZ = 1
-    SEGUNDOS_ESTABILIZACION = 1.0
+    SEGUNDOS_ESTABILIZACION = 0.3
 
     scope = TektronixScope(PUERTO_OSCILOSCOPIO)
     gen = AFG1022(PUERTO_GENERADOR, canal=CANAL_GENERADOR_SALIDA)
@@ -305,8 +305,7 @@ if __name__ == "__main__":
                     scope, gen, CANAL_SCOPE_GEN, CANAL_SCOPE_MEDIDA,
                     FREQ_INICIO_KHZ, FREQ_FIN_KHZ, PASO_KHZ, SEGUNDOS_ESTABILIZACION,
                 )
-                nombre_csv = f"caracterizacion_{piezo_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-                guardar_csv(datos, nombre_csv)
+                guardar_csv(datos, f"caracterizacion_agua_{piezo_id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv")
             else:
                 print("No se realizó el barrido. Revisa los puntos marcados arriba.")
 
