@@ -137,7 +137,7 @@ class AFG1022:
         """Recibe la frecuencia en kHz (como tú la manejas) y la manda en Hz al equipo"""
         freq_hz = freq_khz * 1000
         self._write(f'SOURce{self.canal}:FREQuency {freq_hz}')
-        time.sleep(0.2)
+        time.sleep(0.1)
 
     def disconnect(self):
         if self.gen:
@@ -277,8 +277,8 @@ def guardar_csv(datos, ruta_salida: str = None):
 # ============================================================
 if __name__ == "__main__":
     # Ajusta estos puertos según tu sistema (revisa con: ls /dev/usbtmc*)
-    PUERTO_OSCILOSCOPIO = "/dev/usbtmc0"
-    PUERTO_GENERADOR = "/dev/usbtmc1"
+    PUERTO_OSCILOSCOPIO = "/dev/usbtmc1"
+    PUERTO_GENERADOR = "/dev/usbtmc0"
 
     CANAL_GENERADOR_SALIDA = 2   # canal físico del AFG1022 que estás usando
     CANAL_SCOPE_GEN = 1          # canal del osciloscopio conectado a la salida del generador
